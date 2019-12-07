@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+#[derive(Debug)]
 enum Operation {
     Add(i32, i32, usize),
     Multiply(i32, i32, usize),
@@ -40,24 +41,31 @@ impl ModeFlag {
 pub struct IntProgram {
     memory: Vec<i32>,
     pc: usize,
+    halt: bool,
 }
 
 impl IntProgram {
     pub fn new(memory: Vec<i32>) -> IntProgram {
-        IntProgram { memory, pc: 0 }
+        IntProgram { memory, pc: 0, halt: false }
+    }
+
+    pub fn can_run(&self) -> bool {
+        !self.halt
     }
 
     pub fn execute(&mut self, input: Vec<i32>) -> Vec<i32> {
         let mut output: Vec<i32> = Vec::new();
         let mut input: VecDeque<i32> = VecDeque::from(input);
-        loop {
+        while self.can_run() {
             let op = self.extract_op();
             match op {
-                Some(op) => match op {
-                    Operation::Halt => break,
-                    _ => self.iterate(op, &mut input, &mut output),
-                },
-                None => panic!("program error"),
+                Some(op) => {
+                    if let Some(ret) = self.iterate(op, &mut input, &mut output) {
+                        self.consume(ret);
+                        break;
+                    }
+                }
+                None => break,
             }
         }
         output
@@ -153,46 +161,81 @@ impl IntProgram {
         }
     }
 
-    fn iterate(&mut self, op: Operation, input: &mut VecDeque<i32>, output: &mut Vec<i32>) {
+    fn consume(&mut self, op: Operation) {
+        self.pc -= match (op) {
+            Operation::Add(_, _, _) => 4,
+            Operation::Multiply(_, _, _) => 4,
+            Operation::Input(_) => 2,
+            Operation::Output(_) => 2,
+            Operation::JumpFalse(_, _) => 3,
+            Operation::JumpTrue(_, _) => 3,
+            Operation::CmpLess(_, _, _) => 4,
+            Operation::CmpEqual(_, _, _) => 4,
+            Operation::Halt => 1,
+        }
+    }
+
+    fn iterate(&mut self, op: Operation, input: &mut VecDeque<i32>, output: &mut Vec<i32>) -> Option<Operation> {
         match op {
             Operation::Add(op1, op2, addr) => {
                 if let Some(e) = self.memory.get_mut(addr) {
                     *e = op1 + op2;
+                    return None;
                 }
+                Some(op)
             }
             Operation::Multiply(op1, op2, addr) => {
                 if let Some(e) = self.memory.get_mut(addr) {
                     *e = op1 * op2;
+                    return None;
                 }
+                Some(op)
             }
             Operation::Input(addr) => {
-                let input = input.pop_front().expect("insufficient input");
                 if let Some(e) = self.memory.get_mut(addr) {
-                    *e = input;
+                    if let Some(i) = input.pop_front() {
+                        *e = i;
+                        return None;
+                    }
                 }
+                Some(op)
             }
-            Operation::Output(op) => output.push(op),
+            Operation::Output(op1) => {
+                output.push(op1);
+                None
+            }
             Operation::JumpTrue(op1, pc) => {
                 if op1 != 0 {
-                    self.pc = pc as usize
+                    self.pc = pc as usize;
+                    return None;
                 }
+                Some(op)
             }
             Operation::JumpFalse(op1, pc) => {
                 if op1 == 0 {
-                    self.pc = pc as usize
+                    self.pc = pc as usize;
+                    return None;
                 }
+                Some(op)
             }
             Operation::CmpLess(op1, op2, addr) => {
                 if let Some(e) = self.memory.get_mut(addr) {
                     *e = if op1 < op2 { 1 } else { 0 };
+                    return None;
                 }
+                Some(op)
             }
             Operation::CmpEqual(op1, op2, addr) => {
                 if let Some(e) = self.memory.get_mut(addr) {
                     *e = if op1 == op2 { 1 } else { 0 };
+                    return None;
                 }
+                Some(op)
             }
-            Operation::Halt => (),
-        };
+            Operation::Halt => {
+                self.halt = true;
+                None
+            }
+        }
     }
 }

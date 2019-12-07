@@ -14,12 +14,7 @@ struct Line {
 
 impl Line {
     fn new(x: i32, y: i32, len: i32, direction: Direction) -> Line {
-        Line {
-            x,
-            y,
-            len,
-            direction,
-        }
+        Line { x, y, len, direction }
     }
 }
 
@@ -60,11 +55,7 @@ fn convert_wire(code: &String) -> Vec<Line> {
     for s in iter {
         let mut char_iter = s.chars();
         let prefix: char = char_iter.next().expect("incorrect input");
-        let len: i32 = char_iter
-            .collect::<String>()
-            .trim()
-            .parse::<i32>()
-            .expect("parsing error");
+        let len: i32 = char_iter.collect::<String>().trim().parse::<i32>().expect("parsing error");
         wire.push(match prefix {
             'L' => Line::new(x, y, -len, Direction::Horizontal),
             'R' => Line::new(x, y, len, Direction::Horizontal),
@@ -109,8 +100,7 @@ fn main() {
             let mut l2: i32 = 0;
             for w2 in &wire1 {
                 if let Some((x, y)) = intersect(&w1, &w2) {
-                    let dis =
-                        l1 + l2 + abs(x - w1.x) + abs(y - w1.y) + abs(x - w2.x) + abs(y - w2.y);
+                    let dis = l1 + l2 + abs(x - w1.x) + abs(y - w1.y) + abs(x - w2.x) + abs(y - w2.y);
                     if dis != 0 && dis < min {
                         min = dis;
                     }
