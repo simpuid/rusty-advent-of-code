@@ -63,6 +63,23 @@ impl IntProgram {
         output
     }
 
+    pub fn get(&self, index: usize) -> Option<i32> {
+        match self.memory.get(index) {
+            Some(e) => Some(*e),
+            None => None,
+        }
+    }
+
+    pub fn set(&mut self, index: usize, val: i32) -> bool {
+        match self.memory.get_mut(index) {
+            Some(e) => {
+                *e = val;
+                true
+            }
+            None => false,
+        }
+    }
+
     fn param(&mut self, mode: Mode) -> Option<i32> {
         match self.memory.get(self.pc) {
             Some(i) => {
