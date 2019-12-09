@@ -54,8 +54,8 @@ impl IntProgram {
     }
 
     pub fn execute(&mut self, input: Vec<i64>) -> Vec<i64> {
-        let mut output: Vec<i64> = Vec::new();
-        let mut input: VecDeque<i64> = VecDeque::from(input);
+        let mut output = Vec::new();
+        let mut input = VecDeque::from(input);
         while self.can_run() {
             let op = self.extract_op();
             match op {
@@ -71,36 +71,32 @@ impl IntProgram {
         output
     }
 
-    pub fn get(&self, index: usize) -> Option<i64> {
-        match self.memory.get(index) {
-            Some(e) => Some(*e),
-            None => None,
+    pub fn get(&mut self, index: usize) -> i64 {
+        while self.memory.len() <= index {
+            self.memory.push(0)
         }
+        *self.memory.get(index).expect("push failed")
     }
 
-    pub fn set(&mut self, index: usize, val: i64) -> bool {
-        match self.memory.get_mut(index) {
-            Some(e) => {
-                *e = val;
-                true
-            }
-            None => false,
+    pub fn set(&mut self, index: usize, val: i64) {
+        while self.memory.len() <= index {
+            self.memory.push(0)
         }
+        *self.memory.get_mut(index).expect("push failed") = val;
     }
 
     fn param(&mut self, mode: Mode) -> Option<i64> {
-        match self.memory.get(self.pc) {
-            Some(i) => {
-                self.pc += 1;
-                match mode {
-                    Mode::Address => match self.memory.get(*i as usize) {
-                        Some(j) => Some(*j),
-                        None => None,
-                    },
-                    Mode::Intermediate => Some(*i),
+        let immediate_value = self.get(self.pc);
+        self.pc += 1;
+        match mode {
+            Mode::Address => {
+                if immediate_value < 0 {
+                    None
+                } else {
+                    Some(self.get(immediate_value as usize))
                 }
             }
-            None => None,
+            Mode::Intermediate => Some(immediate_value),
         }
     }
 
@@ -178,25 +174,17 @@ impl IntProgram {
     fn iterate(&mut self, op: Operation, input: &mut VecDeque<i64>, output: &mut Vec<i64>) -> Option<Operation> {
         match op {
             Operation::Add(op1, op2, addr) => {
-                if let Some(e) = self.memory.get_mut(addr) {
-                    *e = op1 + op2;
-                    return None;
-                }
-                Some(op)
+                self.set(addr, op1 + op2);
+                None
             }
             Operation::Multiply(op1, op2, addr) => {
-                if let Some(e) = self.memory.get_mut(addr) {
-                    *e = op1 * op2;
-                    return None;
-                }
-                Some(op)
+                self.set(addr, op1 * op2);
+                None
             }
             Operation::Input(addr) => {
-                if let Some(e) = self.memory.get_mut(addr) {
-                    if let Some(i) = input.pop_front() {
-                        *e = i;
-                        return None;
-                    }
+                if let Some(i) = input.pop_front() {
+                    self.set(addr, i);
+                    return None;
                 }
                 Some(op)
             }
@@ -219,18 +207,12 @@ impl IntProgram {
                 Some(op)
             }
             Operation::CmpLess(op1, op2, addr) => {
-                if let Some(e) = self.memory.get_mut(addr) {
-                    *e = if op1 < op2 { 1 } else { 0 };
-                    return None;
-                }
-                Some(op)
+                self.set(addr, if op1 < op2 { 1 } else { 0 });
+                None
             }
             Operation::CmpEqual(op1, op2, addr) => {
-                if let Some(e) = self.memory.get_mut(addr) {
-                    *e = if op1 == op2 { 1 } else { 0 };
-                    return None;
-                }
-                Some(op)
+                self.set(addr, if op1 == op2 { 1 } else { 0 });
+                None
             }
             Operation::Halt => {
                 self.halt = true;
