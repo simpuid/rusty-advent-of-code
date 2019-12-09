@@ -65,10 +65,14 @@ impl IntProgram {
                 Some(op) => {
                     if let Some(ret) = self.iterate(op, &mut input, &mut output) {
                         self.consume(ret);
+                        println!("consume");
                         break;
                     }
                 }
-                None => break,
+                None => {
+                    println!("extraction failed");
+                    break;
+                }
             }
         }
         output
@@ -111,26 +115,49 @@ impl IntProgram {
         }
     }
 
+    fn address(&mut self, mode: Mode) -> Option<usize> {
+        let immediate_value = self.get(self.pc);
+        self.pc += 1;
+        match mode {
+            Mode::Address => {
+                if immediate_value < 0 {
+                    None
+                } else {
+                    Some(immediate_value as usize)
+                }
+            }
+            Mode::Relative => {
+                let addr = immediate_value + self.base;
+                if addr < 0 {
+                    None
+                } else {
+                    Some(addr as usize)
+                }
+            }
+            _ => None,
+        }
+    }
+
     fn extract_op(&mut self) -> Option<Operation> {
         match self.param(Mode::Intermediate) {
             Some(op_code) => {
                 let mut flag = ModeFlag::new(op_code / 100);
                 match op_code % 100 {
                     1 => match (self.param(flag.next()), self.param(flag.next())) {
-                        (Some(op1), Some(op2)) => match self.param(Mode::Intermediate) {
+                        (Some(op1), Some(op2)) => match self.address(flag.next()) {
                             Some(addr) => Some(Operation::Add(op1, op2, addr as usize)),
                             None => None,
                         },
                         _ => None,
                     },
                     2 => match (self.param(flag.next()), self.param(flag.next())) {
-                        (Some(op1), Some(op2)) => match self.param(Mode::Intermediate) {
+                        (Some(op1), Some(op2)) => match self.address(flag.next()) {
                             Some(addr) => Some(Operation::Multiply(op1, op2, addr as usize)),
                             None => None,
                         },
                         _ => None,
                     },
-                    3 => match self.param(Mode::Intermediate) {
+                    3 => match self.address(flag.next()) {
                         Some(i) => Some(Operation::Input(i as usize)),
                         None => None,
                     },
@@ -147,14 +174,14 @@ impl IntProgram {
                         _ => None,
                     },
                     7 => match (self.param(flag.next()), self.param(flag.next())) {
-                        (Some(op1), Some(op2)) => match self.param(Mode::Intermediate) {
+                        (Some(op1), Some(op2)) => match self.address(flag.next()) {
                             Some(addr) => Some(Operation::CmpLess(op1, op2, addr as usize)),
                             None => None,
                         },
                         _ => None,
                     },
                     8 => match (self.param(flag.next()), self.param(flag.next())) {
-                        (Some(op1), Some(op2)) => match self.param(Mode::Intermediate) {
+                        (Some(op1), Some(op2)) => match self.address(flag.next()) {
                             Some(addr) => Some(Operation::CmpEqual(op1, op2, addr as usize)),
                             None => None,
                         },
@@ -211,16 +238,14 @@ impl IntProgram {
             Operation::JumpTrue(op1, pc) => {
                 if op1 != 0 {
                     self.pc = pc as usize;
-                    return None;
                 }
-                Some(op)
+                None
             }
             Operation::JumpFalse(op1, pc) => {
                 if op1 == 0 {
                     self.pc = pc as usize;
-                    return None;
                 }
-                Some(op)
+                None
             }
             Operation::CmpLess(op1, op2, addr) => {
                 self.set(addr, if op1 < op2 { 1 } else { 0 });
