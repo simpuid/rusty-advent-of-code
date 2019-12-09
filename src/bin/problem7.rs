@@ -2,13 +2,13 @@ extern crate aoc;
 use aoc::int_code::IntProgram;
 
 fn main() {
-    let code: Vec<i32> = aoc::parse_file::<i32>("input.txt", ",");
+    let code: Vec<i64> = aoc::parse_file::<i64>("input.txt", ",");
     find_max([0, 1, 2, 3, 4], &code);
     find_max([5, 6, 7, 8, 9], &code);
 }
 
-fn call_feedback(phases: &[i32; 5], code: &[i32], thrust: &mut Vec<i32>) {
-    let mut input: i32 = 0;
+fn call_feedback(phases: &[i64; 5], code: &[i64], thrust: &mut Vec<i64>) {
+    let mut input: i64 = 0;
     let mut amp: [IntProgram; 5] = [
         IntProgram::new(code.to_vec()),
         IntProgram::new(code.to_vec()),
@@ -31,7 +31,7 @@ fn call_feedback(phases: &[i32; 5], code: &[i32], thrust: &mut Vec<i32>) {
     thrust.push(input);
 }
 
-fn permute(phases: &mut [i32; 5], size: usize, code: &[i32], thrust: &mut Vec<i32>) {
+fn permute(phases: &mut [i64; 5], size: usize, code: &[i64], thrust: &mut Vec<i64>) {
     if size == 1 {
         call_feedback(&phases, code, thrust);
     } else {
@@ -46,10 +46,10 @@ fn permute(phases: &mut [i32; 5], size: usize, code: &[i32], thrust: &mut Vec<i3
     }
 }
 
-fn find_max(mut phases: [i32; 5], code: &[i32]) {
-    let mut thrust: Vec<i32> = Vec::new();
+fn find_max(mut phases: [i64; 5], code: &[i64]) {
+    let mut thrust: Vec<i64> = Vec::new();
     permute(&mut phases, 5, &code, &mut thrust);
-    let mut max: i32 = *thrust.first().expect("empty permutation");
+    let mut max: i64 = *thrust.first().expect("empty permutation");
     for i in thrust {
         if max < i {
             max = i;

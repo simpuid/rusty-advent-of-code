@@ -2,14 +2,14 @@ use std::collections::VecDeque;
 
 #[derive(Debug)]
 enum Operation {
-    Add(i32, i32, usize),
-    Multiply(i32, i32, usize),
+    Add(i64, i64, usize),
+    Multiply(i64, i64, usize),
     Input(usize),
-    Output(i32),
-    JumpTrue(i32, i32),
-    JumpFalse(i32, i32),
-    CmpLess(i32, i32, usize),
-    CmpEqual(i32, i32, usize),
+    Output(i64),
+    JumpTrue(i64, i64),
+    JumpFalse(i64, i64),
+    CmpLess(i64, i64, usize),
+    CmpEqual(i64, i64, usize),
     Halt,
 }
 
@@ -19,11 +19,11 @@ enum Mode {
 }
 
 struct ModeFlag {
-    flag: i32,
+    flag: i64,
 }
 
 impl ModeFlag {
-    fn new(flag: i32) -> ModeFlag {
+    fn new(flag: i64) -> ModeFlag {
         ModeFlag { flag }
     }
 
@@ -39,13 +39,13 @@ impl ModeFlag {
 }
 
 pub struct IntProgram {
-    memory: Vec<i32>,
+    memory: Vec<i64>,
     pc: usize,
     halt: bool,
 }
 
 impl IntProgram {
-    pub fn new(memory: Vec<i32>) -> IntProgram {
+    pub fn new(memory: Vec<i64>) -> IntProgram {
         IntProgram { memory, pc: 0, halt: false }
     }
 
@@ -53,9 +53,9 @@ impl IntProgram {
         !self.halt
     }
 
-    pub fn execute(&mut self, input: Vec<i32>) -> Vec<i32> {
-        let mut output: Vec<i32> = Vec::new();
-        let mut input: VecDeque<i32> = VecDeque::from(input);
+    pub fn execute(&mut self, input: Vec<i64>) -> Vec<i64> {
+        let mut output: Vec<i64> = Vec::new();
+        let mut input: VecDeque<i64> = VecDeque::from(input);
         while self.can_run() {
             let op = self.extract_op();
             match op {
@@ -71,14 +71,14 @@ impl IntProgram {
         output
     }
 
-    pub fn get(&self, index: usize) -> Option<i32> {
+    pub fn get(&self, index: usize) -> Option<i64> {
         match self.memory.get(index) {
             Some(e) => Some(*e),
             None => None,
         }
     }
 
-    pub fn set(&mut self, index: usize, val: i32) -> bool {
+    pub fn set(&mut self, index: usize, val: i64) -> bool {
         match self.memory.get_mut(index) {
             Some(e) => {
                 *e = val;
@@ -88,7 +88,7 @@ impl IntProgram {
         }
     }
 
-    fn param(&mut self, mode: Mode) -> Option<i32> {
+    fn param(&mut self, mode: Mode) -> Option<i64> {
         match self.memory.get(self.pc) {
             Some(i) => {
                 self.pc += 1;
@@ -162,7 +162,7 @@ impl IntProgram {
     }
 
     fn consume(&mut self, op: Operation) {
-        self.pc -= match (op) {
+        self.pc -= match op {
             Operation::Add(_, _, _) => 4,
             Operation::Multiply(_, _, _) => 4,
             Operation::Input(_) => 2,
@@ -175,7 +175,7 @@ impl IntProgram {
         }
     }
 
-    fn iterate(&mut self, op: Operation, input: &mut VecDeque<i32>, output: &mut Vec<i32>) -> Option<Operation> {
+    fn iterate(&mut self, op: Operation, input: &mut VecDeque<i64>, output: &mut Vec<i64>) -> Option<Operation> {
         match op {
             Operation::Add(op1, op2, addr) => {
                 if let Some(e) = self.memory.get_mut(addr) {
