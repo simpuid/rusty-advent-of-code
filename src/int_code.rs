@@ -11,11 +11,13 @@ enum Operation {
     CmpLess(i64, i64, usize),
     CmpEqual(i64, i64, usize),
     Halt,
+    Rebase(i64),
 }
 
 enum Mode {
     Address,
     Intermediate,
+    Relative,
 }
 
 struct ModeFlag {
@@ -28,12 +30,12 @@ impl ModeFlag {
     }
 
     fn next(&mut self) -> Mode {
-        let flag = (self.flag % 10) == 0;
+        let flag = self.flag % 10;
         self.flag /= 10;
-        if flag {
-            Mode::Address
-        } else {
-            Mode::Intermediate
+        match flag {
+            0 => Mode::Address,
+            1 => Mode::Intermediate,
+            _ => Mode::Relative,
         }
     }
 }
@@ -42,11 +44,12 @@ pub struct IntProgram {
     memory: Vec<i64>,
     pc: usize,
     halt: bool,
+    base: i64,
 }
 
 impl IntProgram {
     pub fn new(memory: Vec<i64>) -> IntProgram {
-        IntProgram { memory, pc: 0, halt: false }
+        IntProgram { memory, pc: 0, halt: false, base: 0 }
     }
 
     pub fn can_run(&self) -> bool {
@@ -97,6 +100,14 @@ impl IntProgram {
                 }
             }
             Mode::Intermediate => Some(immediate_value),
+            Mode::Relative => {
+                let addr = immediate_value + self.base;
+                if addr < 0 {
+                    None
+                } else {
+                    Some(self.get(addr as usize))
+                }
+            }
         }
     }
 
@@ -150,6 +161,10 @@ impl IntProgram {
                         _ => None,
                     },
                     99 => Some(Operation::Halt),
+                    9 => match self.param(flag.next()) {
+                        Some(i) => Some(Operation::Rebase(i)),
+                        None => None,
+                    },
                     _ => None,
                 }
             }
@@ -168,6 +183,7 @@ impl IntProgram {
             Operation::CmpLess(_, _, _) => 4,
             Operation::CmpEqual(_, _, _) => 4,
             Operation::Halt => 1,
+            Operation::Rebase(_) => 2,
         }
     }
 
@@ -216,6 +232,10 @@ impl IntProgram {
             }
             Operation::Halt => {
                 self.halt = true;
+                None
+            }
+            Operation::Rebase(op1) => {
+                self.base += op1;
                 None
             }
         }
