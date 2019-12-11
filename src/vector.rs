@@ -1,6 +1,6 @@
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Vector {
     pub x: i32,
     pub y: i32,

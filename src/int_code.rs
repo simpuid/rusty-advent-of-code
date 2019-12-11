@@ -65,7 +65,6 @@ impl IntProgram {
                 Some(op) => {
                     if let Some(ret) = self.iterate(op, &mut input, &mut output) {
                         self.consume(ret);
-                        println!("consume");
                         break;
                     }
                 }
