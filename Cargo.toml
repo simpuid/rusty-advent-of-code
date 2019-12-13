@@ -5,3 +5,4 @@ authors = ["simpuid <utkarsh.email@yahoo.com>"]
 edition = "2018"
 
 [dependencies]
+ggez = "0.5.1"
