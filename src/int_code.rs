@@ -40,6 +40,7 @@ impl ModeFlag {
     }
 }
 
+#[derive(Clone)]
 pub struct IntProgram {
     memory: Vec<i64>,
     pc: usize,
