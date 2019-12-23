@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 #[derive(Debug)]
-enum Operation {
+pub enum Operation {
     Add(i64, i64, usize),
     Multiply(i64, i64, usize),
     Input(usize),
@@ -14,10 +14,37 @@ enum Operation {
     Rebase(i64),
 }
 
+impl Operation {
+    fn size(&self) -> usize {
+        match self {
+            Operation::Add(_, _, _) => 4,
+            Operation::Multiply(_, _, _) => 4,
+            Operation::Input(_) => 2,
+            Operation::Output(_) => 2,
+            Operation::JumpFalse(_, _) => 3,
+            Operation::JumpTrue(_, _) => 3,
+            Operation::CmpLess(_, _, _) => 4,
+            Operation::CmpEqual(_, _, _) => 4,
+            Operation::Halt => 1,
+            Operation::Rebase(_) => 2,
+        }
+    }
+}
+
 enum Mode {
     Address,
     Intermediate,
     Relative,
+}
+
+pub trait Feeder {
+    fn next(&mut self) -> Option<i64>;
+}
+
+impl Feeder for VecDeque<i64> {
+    fn next(&mut self) -> Option<i64> {
+        self.pop_front()
+    }
 }
 
 struct ModeFlag {
@@ -64,9 +91,14 @@ impl IntProgram {
             let op = self.extract_op();
             match op {
                 Some(op) => {
-                    if let Some(ret) = self.iterate(op, &mut input, &mut output) {
-                        self.consume(ret);
-                        break;
+                    let size = op.size();
+                    match self.iterate(op, &mut input) {
+                        (true, Some(out)) => output.push(out),
+                        (false, _) => {
+                            self.pc -= size;
+                            break;
+                        }
+                        _ => (),
                     }
                 }
                 None => {
@@ -138,7 +170,7 @@ impl IntProgram {
         }
     }
 
-    fn extract_op(&mut self) -> Option<Operation> {
+    pub fn extract_op(&mut self) -> Option<Operation> {
         match self.param(Mode::Intermediate) {
             Some(op_code) => {
                 let mut flag = ModeFlag::new(op_code / 100);
@@ -199,70 +231,45 @@ impl IntProgram {
         }
     }
 
-    fn consume(&mut self, op: Operation) {
-        self.pc -= match op {
-            Operation::Add(_, _, _) => 4,
-            Operation::Multiply(_, _, _) => 4,
-            Operation::Input(_) => 2,
-            Operation::Output(_) => 2,
-            Operation::JumpFalse(_, _) => 3,
-            Operation::JumpTrue(_, _) => 3,
-            Operation::CmpLess(_, _, _) => 4,
-            Operation::CmpEqual(_, _, _) => 4,
-            Operation::Halt => 1,
-            Operation::Rebase(_) => 2,
-        }
-    }
-
-    fn iterate(&mut self, op: Operation, input: &mut VecDeque<i64>, output: &mut Vec<i64>) -> Option<Operation> {
+    pub fn iterate(&mut self, op: Operation, input: &mut dyn Feeder) -> (bool, Option<i64>) {
         match op {
             Operation::Add(op1, op2, addr) => {
                 self.set(addr, op1 + op2);
-                None
             }
             Operation::Multiply(op1, op2, addr) => {
                 self.set(addr, op1 * op2);
-                None
             }
             Operation::Input(addr) => {
-                if let Some(i) = input.pop_front() {
+                if let Some(i) = input.next() {
                     self.set(addr, i);
-                    return None;
+                } else {
+                    return (false, None);
                 }
-                Some(op)
             }
-            Operation::Output(op1) => {
-                output.push(op1);
-                None
-            }
+            Operation::Output(op1) => return (true, Some(op1)),
             Operation::JumpTrue(op1, pc) => {
                 if op1 != 0 {
                     self.pc = pc as usize;
                 }
-                None
             }
             Operation::JumpFalse(op1, pc) => {
                 if op1 == 0 {
                     self.pc = pc as usize;
                 }
-                None
             }
             Operation::CmpLess(op1, op2, addr) => {
                 self.set(addr, if op1 < op2 { 1 } else { 0 });
-                None
             }
             Operation::CmpEqual(op1, op2, addr) => {
                 self.set(addr, if op1 == op2 { 1 } else { 0 });
-                None
             }
             Operation::Halt => {
                 self.halt = true;
-                None
             }
             Operation::Rebase(op1) => {
                 self.base += op1;
-                None
             }
         }
+        (true, None)
     }
 }
