@@ -1,6 +1,5 @@
 extern crate aoc;
 use aoc::vector::Vector;
-use std::cmp::Ordering;
 use std::collections::HashMap;
 
 #[derive(Copy, Clone)]

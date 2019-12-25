@@ -1,7 +1,7 @@
 extern crate aoc;
 
 use aoc::vector::Vector;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 enum Cell {

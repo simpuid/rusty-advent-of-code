@@ -1,10 +1,5 @@
 extern crate aoc;
 
-fn get_value(x: usize, y: usize) -> i32 {
-    let values = [0, 1, 0, -1];
-    *values.get((y + 1) / (x + 1) % 4).unwrap()
-}
-
 fn get_offset(slice: &[i32]) -> usize {
     let mut result = 0;
     let mut multiplier = 1;

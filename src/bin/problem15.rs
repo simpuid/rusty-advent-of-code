@@ -109,7 +109,7 @@ fn main() {
             let new_pos = droid.position + d.to_vector();
             if !visited.contains(&new_pos) {
                 visited.insert(new_pos);
-                if let Some(e) = droid.check(*d) {
+                if let Some(_) = droid.check(*d) {
                     let mut new_droid = droid.clone();
                     new_droid.move_droid(*d);
                     stack.push_back(new_droid);
